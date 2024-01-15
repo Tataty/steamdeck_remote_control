@@ -44,13 +44,13 @@ class SteamDeckController:
     def __init__(self, collect_logs= False) -> None:
         self.fn: str = self.await_controller()
 
-        logger.info("Connecting to controller")
+        print("Connecting to controller")
         self.jsdev = open(self.fn, 'rb')
 
         buf = array.array('B', [0] * 64)
         ioctl(self.jsdev, 0x80006a13 + (0x10000 * len(buf)), buf)
         self.js_name = buf.tobytes().rstrip(b'\x00').decode('utf-8')
-        logger.info('Device name: %s', self.js_name)
+        print('Device name: {}'.format(self.js_name))
 
         self.collect_logs = collect_logs
         self.log_queue = queue.Queue()
@@ -62,18 +62,25 @@ class SteamDeckController:
             "axises": {},
             "buttons": {},
         }
-        self._monitor_dev()
-        
+        self.monitor_thread = threading.Thread(target=self._monitor_dev)
+        self.monitor_dev()
+
     def await_controller(self) -> str:
-        logger.info("Waiting for controller")
+        print("Waiting for controller")
         while True:
             for fn in os.listdir(self.dev_loc):
                 if fn.startswith('js'):
-                    logger.info( 'Controller found: %s%s', self.dev_loc, fn)
+                    print( 'Controller found: {}{}'.format(self.dev_loc, fn))
                     return f"{self.dev_loc}{fn}"
                 else:
-                    logger.warning("Controller not found")
+                    print("Controller not found")
                     time.sleep(1)
+
+
+    def monitor_dev(self) -> None:
+        self._terminate_monitor: bool = False
+        self.monitor_thread.start()
+
 
     def _monitor_dev(self, vibrate: bool = False) -> None:   # TODO vibrate not implemented
         while True:
@@ -83,13 +90,13 @@ class SteamDeckController:
             if self.evbuf:
                 time1, value, type, number = struct.unpack('IhBB', self.evbuf)
                 if type & 0x01:
-                    logger.debug("= %s %s -> %s", value, number, self.button_map[number])
+                    print("= {} {} -> {}".format(value, number, self.button_map[number]))
                     self.current_state["buttons"][self.button_map[number]] = value
 
                 elif type & 0x02:
                     if number != 6 and number != 7:
                         self.current_state["axises"][self.axis_map[number]] = value
-                        logger.debug("%s: %.3f" % (self.axis_map[number], value))
+                        print("{}: {}".format(self.axis_map[number], value))
                     elif number == 6 and value == -32767:
                         # self.current_state["buttons"][] = 
                         self.current_state["buttons"][ButtonID.PAD_LEFT] = 1 
@@ -105,3 +112,22 @@ class SteamDeckController:
                     elif number == 7 and value == 0:
                         self.current_state["buttons"][ButtonID.PAD_UP] = 0
                         self.current_state["buttons"][ButtonID.PAD_DOWN] = 0
+
+    def send_update(self):
+        self.current_state_copy = self.current_state.copy()
+        for button_id, value in self.current_state_copy.get("buttons").items():
+            if value != self.previous_state.get("buttons").get(button_id, 0):
+                print(button_id, value)
+        for axis_id, value in self.current_state_copy.get("axises").items():
+            if value != self.previous_state.get("axises").get(axis_id, 0):
+                print(axis_id, value)
+        
+        self.previous_state["buttons"] = self.current_state_copy.get("buttons").copy()
+        self.previous_state["axises"] = self.current_state_copy.get("axises").copy()
+
+    def terminate(self) -> None:
+        self._terminate_monitor = True
+        self.monitor_thread.join()
+        return
+        
+sdk = SteamDeckController()

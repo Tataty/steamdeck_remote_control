@@ -1,99 +1,28 @@
-# App with a green ball in the center that moves when you press the HAT buttons
-import pyjoystick
-from pyjoystick.sdl2 import Key, Joystick, run_event_loop
-# from pyjoystick.pygame import Key, Joystick, run_event_loop
-from qt_thread_updater import ThreadUpdater
-
-from qtpy import QtWidgets, QtGui, QtCore
+import signal
+from xbox360controller import Xbox360Controller
 
 
-app = QtWidgets.QApplication()
+def on_button_pressed(button):
+    print('Button {0} was pressed'.format(button.name))
 
-updater = ThreadUpdater()
 
-main = QtWidgets.QWidget()
-main.setLayout(QtWidgets.QHBoxLayout())
-main.resize(800, 600)
-main.show()
+def on_button_released(button):
+    print('Button {0} was released'.format(button.name))
 
-lbl = QtWidgets.QLabel()  # Absolute positioning
-main.layout().addWidget(lbl, alignment=QtCore.Qt.AlignTop)
 
-mover = QtWidgets.QLabel(parent=main)  # Absolute positioning
-mover.resize(50, 50)
-mover.point = main.rect().center()
-mover.move(mover.point)
-mover.show()
+def on_axis_moved(axis):
+    print('Axis {0} moved to {1} {2}'.format(axis.name, axis.x, axis.y))
 
-def svg_paint_event(self, event):
-    painter = QtGui.QPainter(self)
-    painter.setRenderHint(painter.Antialiasing, True)
+try:
+    with Xbox360Controller(0, axis_threshold=0.2) as controller:
+        # Button A events
+        controller.button_a.when_pressed = on_button_pressed
+        controller.button_a.when_released = on_button_released
 
-    # Get Black Background
-    rect = self.rect()
-    center = rect.center()
-    radius = 20
+        # Left and right axis move event
+        controller.axis_l.when_moved = on_axis_moved
+        controller.axis_r.when_moved = on_axis_moved
 
-    # Colors
-    painter.setBrush(QtGui.QColor('green'))  # Fill color
-    painter.setPen(QtGui.QColor('black'))  # Line Color
-
-    # Draw
-    painter.drawEllipse(center, radius, radius)
-
-    painter.end()
-
-mover.paintEvent = svg_paint_event.__get__(mover, mover.__class__)
-
-def handle_key_event(key):
-    updater.now_call_latest(lbl.setText, '{}: {} = {}'.format(key.joystick, key, key.value))
-
-    # print(key, '-', key.keytype, '-', key.number, '-', key.value)
-
-    if key.keytype != Key.HAT:
-        return
-
-    if key.value == Key.HAT_UP:
-        mover.point.setY(mover.point.y() - 10)
-    elif key.value == Key.HAT_DOWN:
-        mover.point.setY(mover.point.y() + 10)
-    if key.value == Key.HAT_LEFT:
-        mover.point.setX(mover.point.x() - 10)
-    elif key.value == Key.HAT_UPLEFT:
-        mover.point.setX(mover.point.x() - 5)
-        mover.point.setY(mover.point.y() - 5)
-    elif key.value == Key.HAT_DOWNLEFT:
-        mover.point.setX(mover.point.x() - 5)
-        mover.point.setY(mover.point.y() + 5)
-    elif key.value == Key.HAT_RIGHT:
-        mover.point.setX(mover.point.x() + 10)
-    elif key.value == Key.HAT_UPRIGHT:
-        mover.point.setX(mover.point.x() + 5)
-        mover.point.setY(mover.point.y() - 5)
-    elif key.value == Key.HAT_DOWNRIGHT:
-        mover.point.setX(mover.point.x() + 5)
-        mover.point.setY(mover.point.y() + 5)
-    updater.now_call_latest(mover.move, mover.point)
-
-# If it button is held down it should be repeated
-repeater = pyjoystick.HatRepeater(first_repeat_timeout=0.5, repeat_timeout=0.03, check_timeout=0.01)
-
-mngr = pyjoystick.ThreadEventManager(event_loop=run_event_loop,
-                                     handle_key_event=handle_key_event,
-                                     button_repeater=repeater)
-mngr.start()
-
-# Find key functionality
-btn = QtWidgets.QPushButton('Find Key:')
-
-def find_key():
-    key = mngr.find_key(timeout=float('inf'))
-    if key is None:
-        btn.setText('Find Key:')
-    else:
-        btn.setText('Find Key: {} = {}'.format(key, key.value))
-
-btn.clicked.connect(find_key)
-main.layout().addWidget(btn, alignment=QtCore.Qt.AlignTop)
-
-app.exec_()
+        signal.pause()
+except KeyboardInterrupt:
+    pass

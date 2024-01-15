@@ -5,7 +5,7 @@ def draw_rectangle(screen, x, y):
     pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(x, y, 50, 50))
 
 def receive_data():
-    host = '127.0.0.1'  # IP-адрес сервера (в данном случае, localhost)
+    host = '0.0.0.0'  # IP-адрес сервера (в данном случае, localhost)
     port = 12345         # Произвольный порт
 
     pygame.init()

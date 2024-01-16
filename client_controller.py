@@ -18,11 +18,11 @@ class ClientController:
     def SendToServer(self):
         while True:
             message = json.dumps(self.last_axis_data).encode('utf-8')
+            print('send moved: {} {}'.format(last_axis_data.x, last_axis_data.y))
             self.client_socket.sendto(message, self.server_address)
             time.sleep(0.1)
     
     def on_axis_moved(self, axis):
-        print('Axis {0} moved to {1} {2}'.format(axis.name, axis.x, axis.y))
         
         self.last_axis_data = {'x': axis.x, 'y': axis.y}
     

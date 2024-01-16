@@ -1,24 +1,17 @@
 import socket
-import time
-import random
+import json
 
-def generate_data():
-    # Генерируем случайные значения от -1 до 1
-    data1 = random.uniform(-1, 1)
-    data2 = random.uniform(-1, 1)
-    return data1, data2
+# Задайте адрес и порт сервера
+server_address = ('192.168.0.102', 12345)
 
-def send_data():
-    host = '127.0.0.1'  # IP-адрес сервера (в данном случае, localhost)
-    port = 12345         # Произвольный порт
+# Создайте сокет для обмена данными по UDP
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((host, port))
-        while True:
-            data = generate_data()
-            message = f"{data[0]} {data[1]}"
-            s.sendall(message.encode())
-            time.sleep(1)
-
-if __name__ == "__main__":
-    send_data()
+try:
+    # Отправка данных
+    data = {'x': -0.5, 'y': -0.5}  # Пример координат
+    message = json.dumps(data).encode('utf-8')
+    client_socket.sendto(message, server_address)
+finally:
+    # Закрытие сокета
+    client_socket.close()

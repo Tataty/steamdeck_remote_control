@@ -27,7 +27,7 @@ try:
         y = received_data['y']
         square.goto(x * 300, y * 300)
         screen.update()
-
+        print(received_data)
 finally:
     # Закрытие сокета
     server_socket.close()

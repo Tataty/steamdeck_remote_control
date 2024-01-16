@@ -25,7 +25,7 @@ class ClientController:
     def __init__(self):
         try:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            
+            print("Begin")
             with Xbox360Controller(0, axis_threshold=0.2) as controller:
                 # Button A events
                 controller.button_a.when_pressed = self.on_button_pressed
@@ -35,6 +35,7 @@ class ClientController:
                 controller.axis_l.when_moved = self.on_axis_moved
                 controller.axis_r.when_moved = self.on_axis_moved
 
+                print("signal Begin")
                 signal.pause()
         except KeyboardInterrupt:
             pass

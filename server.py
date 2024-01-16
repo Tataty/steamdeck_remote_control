@@ -1,41 +1,34 @@
-import pygame
 import socket
+import json
+import turtle
 
-def draw_rectangle(screen, x, y):
-    pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(x, y, 50, 50))
+# Задайте адрес и порт сервера
+server_address = ('192.168.0.102', 12345)
 
-def receive_data():
-    host = '0.0.0.0'  # IP-адрес сервера (в данном случае, localhost)
-    port = 12345         # Произвольный порт
+# Создайте сокет для обмена данными по UDP
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+server_socket.bind(server_address)
 
-    pygame.init()
-    screen = pygame.display.set_mode((800, 600))
-    pygame.display.set_caption('Moving Rectangle')
+# Инициализация черепахи для отрисовки
+screen = turtle.Screen()
+screen.setup(width=600, height=600)
+square = turtle.Turtle()
+square.shape("square")
+square.color("red")
 
-    x, y = 375, 275  # Начальные координаты прямоугольника
+try:
+    while True:
+        # Получение данных
+        data, client_address = server_socket.recvfrom(1024)
+        received_data = json.loads(data.decode('utf-8'))
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((host, port))
-        s.listen()
-        conn, addr = s.accept()
+        # Отрисовка квадрата на указанных координатах
+        x = received_data['x']
+        y = received_data['y']
+        square.goto(x * 300, y * 300)
+        screen.update()
 
-        with conn:
-            print('Connected by', addr)
-            while True:
-                data = conn.recv(1024).decode()
-                if not data:
-                    break
-
-                # Разбираем данные
-                data_split = data.split()
-                if len(data_split) == 2:
-                    x_offset, y_offset = float(data_split[0]), float(data_split[1])
-                    x += int(x_offset * 50)  # Масштабируем изменение
-                    y += int(y_offset * 50)
-
-                screen.fill((255, 255, 255))  # Очищаем экран
-                draw_rectangle(screen, x, y)
-                pygame.display.flip()
-
-if __name__ == "__main__":
-    receive_data()
+finally:
+    # Закрытие сокета
+    server_socket.close()
+    turtle.done()

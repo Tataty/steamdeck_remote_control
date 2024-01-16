@@ -31,6 +31,7 @@ class ClientController:
         self.last_axis_data = {'x': 0, 'y': 0}
         
         self.send_thread = threading.Thread(target=self.SendToServer)
+        self.send_thread.start()
     
         try:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -44,7 +45,6 @@ class ClientController:
                 controller.axis_r.when_moved = self.on_axis_moved
 
                 signal.pause()
-                self.send_thread.start()
                 
         except KeyboardInterrupt:
             pass

@@ -30,11 +30,12 @@ class ClientController:
     def __init__(self):
         self.last_axis_data = {'x': 0, 'y': 0}
         
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            
         self.send_thread = threading.Thread(target=self.SendToServer)
         self.send_thread.start()
     
         try:
-            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             with Xbox360Controller(0, axis_threshold=0.2) as controller:
                 # Button A events
                 controller.button_a.when_pressed = self.on_button_pressed

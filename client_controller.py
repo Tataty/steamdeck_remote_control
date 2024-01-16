@@ -30,7 +30,7 @@ class ClientController:
     def __init__(self):
         self.last_axis_data = {'x': 0, 'y': 0}
         
-        self.send_thread = threading.Thread(target=SendToServer)
+        self.send_thread = threading.Thread(target=self.SendToServer)
     
         try:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
